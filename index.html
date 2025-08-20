@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini Spotify Firebase</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+    input, button { margin: 5px 0; padding: 5px; }
+    .song { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>Register/Login</h2>
+<input type="email" id="email" placeholder="Email"><br>
+<input type="password" id="password" placeholder="Password"><br>
+<button onclick="register()">Register</button>
+<button onclick="login()">Login</button>
+
+<h2>Upload MP3</h2>
+<input type="file" id="fileInput" accept="audio/*"><br>
+<button onclick="uploadSong()">Upload</button>
+
+<h2>Music List</h2>
+<div id="songs"></div>
+
+<script>
+  // Firebase config
+  const firebaseConfig = {
+  apiKey: "AIzaSyDeI4PiygX0NpBK90uHtjMknjtvYExmscw",
+  authDomain: "cripted-34c35.firebaseapp.com",
+  projectId: "cripted-34c35",
+  storageBucket: "cripted-34c35.firebasestorage.app",
+  messagingSenderId: "671668615928",
+  appId: "1:671668615928:web:294b08fdac7a0e4399d90d"
+};
+  firebase.initializeApp(firebaseConfig);
+
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  // Register/Login
+  function register() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    auth.createUserWithEmailAndPassword(email, password).catch(console.error);
+  }
+  function login() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    auth.signInWithEmailAndPassword(email, password).catch(console.error);
+  }
+
+  // Upload MP3
+  async function uploadSong() {
+    const file = document.getElementById('fileInput').files[0];
+    if (!file) return alert("Select a file!");
+    const storageRef = storage.ref('songs/' + file.name);
+    await storageRef.put(file);
+    const url = await storageRef.getDownloadURL();
+    await db.collection('songs').add({ name: file.name, url: url });
+    fetchSongs();
+  }
+
+  // Fetch songs
+  async function fetchSongs() {
+    const snapshot = await db.collection('songs').get();
+    const songsDiv = document.getElementById('songs');
+    songsDiv.innerHTML = '';
+    snapshot.forEach(doc => {
+      const song = doc.data();
+      const div = document.createElement('div');
+      div.className = 'song';
+      div.innerHTML = `<p>${song.name}</p><audio controls src="${song.url}"></audio>`;
+      songsDiv.appendChild(div);
+    });
+  }
+
+  // Load songs on start
+  fetchSongs();
+</script>
+
+</body>
+</html>
